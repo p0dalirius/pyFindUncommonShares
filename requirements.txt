@@ -1,5 +1,5 @@
 impacket
 xlsxwriter
-sectools>=1.4.1
+sectools
 pycryptodome
 dnspython
