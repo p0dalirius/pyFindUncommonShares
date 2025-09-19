@@ -7,7 +7,8 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from impacket.smbconnection import SMBConnection, SMB2_DIALECT_002, SMB2_DIALECT_21, SMB_DIALECT, SessionError
-from sectools.windows.ldap import get_computers_from_domain, get_servers_from_domain, get_subnets, raw_ldap_query, init_ldap_session
+from sectools.windows.ldap.wrappers import get_computers_from_domain, get_servers_from_domain, get_subnets
+from sectools.windows.ldap.ldap import raw_ldap_query, init_ldap_session
 from sectools.network.domains import is_fqdn
 from sectools.network.ip import is_ipv4_cidr, is_ipv4_addr, is_ipv6_addr, expand_cidr
 from sectools.windows.crypto import parse_lm_nt_hashes
@@ -43,7 +44,7 @@ COMMON_SHARES = [
 class MicrosoftDNS(object):
     """
     Class to interact with Microsoft DNS servers for resolving domain names to IP addresses.
-    
+
     Attributes:
         dnsserver (str): The IP address of the DNS server.
         verbose (bool): Flag to enable verbose mode.
@@ -72,7 +73,7 @@ class MicrosoftDNS(object):
     def resolve(self, target_name):
         """
         Documentation for class MicrosoftDNS
-        
+
         Attributes:
             dnsserver (str): The IP address of the DNS server.
             verbose (bool): Flag to enable verbose mode.
@@ -158,7 +159,7 @@ class MicrosoftDNS(object):
         Returns:
             dict: A dictionary containing information about wildcard DNS entries found in the Microsoft DNS server.
         """
-        
+
         ldap_server, ldap_session = init_ldap_session(
             auth_domain=self.auth_domain,
             auth_dc_ip=self.auth_dc_ip,
@@ -442,7 +443,7 @@ def parseArgs():
     group_targets_source.add_argument("--no-ldap", default=False, action="store_true", help="Do not perform LDAP queries.")
     group_targets_source.add_argument("--subnets", default=False, action="store_true", help="Get all subnets from the domain and use them as targets (default: False)")
     group_targets_source.add_argument("-tl", "--target-ldap-query", dest="target_ldap_query", type=str, default=None, required=False, help="LDAP query to use to extract computers from the domain.")
-    
+
     secret = parser.add_argument_group("Credentials")
     cred = secret.add_mutually_exclusive_group()
     cred.add_argument("--no-pass", default=False, action="store_true", help="Don't ask for password (useful for -k)")
@@ -558,9 +559,9 @@ def print_results(options, shareData):
                         else:
                             print("[>] Found '\x1b[93m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' (comment: '\x1b[95m%s\x1b[0m') %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], shareData["share"]["comment"], str_colored_access))
                     else:
-                        # Default uncolored print 
+                        # Default uncolored print
                         print("[>] Found '%s' on '%s' (comment: '%s') %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], shareData["share"]["comment"], str_access))
-                
+
                 # Share has no comment
                 else:
                     if options.colors:
@@ -569,7 +570,7 @@ def print_results(options, shareData):
                             print("[>] Found '\x1b[94m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_colored_access))
                         # Not hidden share
                         else:
-                            # Default uncolored print 
+                            # Default uncolored print
                             print("[>] Found '\x1b[93m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_colored_access))
                     else:
                         # Hidden share
@@ -577,12 +578,12 @@ def print_results(options, shareData):
                             print("[>] Found '%s' on '%s' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_access))
                         # Not hidden share
                         else:
-                            # Default uncolored print 
+                            # Default uncolored print
                             print("[>] Found '%s' on '%s' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_access))
             else:
                 # Quiet mode, do not print anything
                 pass
-        
+
         # Debug mode in case of a common share
         elif options.debug and not options.quiet:
             # Share has a comment
@@ -594,11 +595,11 @@ def print_results(options, shareData):
                         print("[>] Skipping common share '\x1b[94m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' (comment: '\x1b[95m%s\x1b[0m') %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], shareData["share"]["comment"], str_colored_access))
                     # Not hidden share
                     else:
-                        # Default uncolored print 
+                        # Default uncolored print
                         print("[>] Skipping common share '\x1b[93m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' (comment: '\x1b[95m%s\x1b[0m') %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], shareData["share"]["comment"], str_colored_access))
                 # Not colored output
                 else:
-                    # Default uncolored print 
+                    # Default uncolored print
                     print("[>] Skipping common share '%s' on '%s' (comment: '%s') %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], shareData["share"]["comment"], str_access))
 
             # Share has no comment
@@ -610,7 +611,7 @@ def print_results(options, shareData):
                         print("[>] Skipping hidden share '\x1b[94m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_colored_access))
                     # Not hidden share
                     else:
-                        # Default uncolored print 
+                        # Default uncolored print
                         print("[>] Skipping common share '\x1b[93m%s\x1b[0m' on '\x1b[96m%s\x1b[0m' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_colored_access))
 
                 # Not colored output
@@ -620,9 +621,9 @@ def print_results(options, shareData):
                         print("[>] Skipping hidden share '%s' on '%s' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_access))
                     # Not hidden share
                     else:
-                        # Default uncolored print 
+                        # Default uncolored print
                         print("[>] Skipping common share '%s' on '%s' %s" % (shareData["share"]["name"], shareData["computer"]["fqdn"], str_access))
-    
+
     except Exception as e:
         if options.debug:
             traceback.print_exc()
@@ -677,12 +678,12 @@ def init_smb_session(options, target_ip, domain, username, password, address, lm
     else:
         if debug:
             print("[debug] SMBv3.0 dialect used")
-    # 
+    #
     if options.auth_use_kerberos is True:
         smbClient.kerberosLogin(username, password, domain, lmhash, nthash, options.auth_key, options.auth_dc_ip)
     else:
         smbClient.login(username, password, domain, lmhash, nthash)
-    # 
+    #
     if smbClient.isGuestSession() > 0:
         if debug:
             print("[debug] GUEST Session Granted")
@@ -694,7 +695,7 @@ def init_smb_session(options, target_ip, domain, username, password, address, lm
 
 def worker(options, target, domain, username, password, lmhash, nthash, results, lock):
     target_type, target_data = target
-    
+
     target_ip = None
     target_name = ""
     if target_type.lower() in ["ip", "ipv4", "ipv6"]:
@@ -727,7 +728,7 @@ def worker(options, target, domain, username, password, lmhash, nthash, results,
                     access_rights = {"readable": False, "writable": False}
                     if options.check_user_access:
                         access_rights = get_access_rights(smbClient, sharename)
-                    
+
                     shareData = {
                         "computer": {
                             "fqdn": target_ip,
@@ -889,7 +890,7 @@ def load_targets(options):
                 print("[debug] Target '%s' was not added." % target)
 
     final_targets = sorted(list(set(final_targets)))
-    
+
     return final_targets
 
 
@@ -901,7 +902,7 @@ if __name__ == '__main__':
         if ":" not in options.auth_hashes:
             options.auth_hashes = ":" + options.auth_hashes
     auth_lm_hash, auth_nt_hash = parse_lm_nt_hashes(options.auth_hashes)
-    
+
     # Use AES Authentication key if available
     if options.auth_key is not None:
         options.auth_use_kerberos = True
