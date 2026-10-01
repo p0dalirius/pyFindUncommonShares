@@ -41,6 +41,23 @@ COMMON_SHARES = [
 ]
 
 
+def strip_cli_value(value):
+    """Remove surrounding whitespace, including non-breaking spaces."""
+    return value.strip()
+
+
+def parse_auth_identity(default_domain, username):
+    """Return the authentication domain and bare username."""
+    if username is None or "\\" not in username:
+        return default_domain, username
+
+    auth_domain, auth_username = username.split("\\", 1)
+    if not auth_domain or not auth_username or "\\" in auth_username:
+        raise ValueError("--auth-user must use the format DOMAIN\\username")
+
+    return auth_domain, auth_username
+
+
 class MicrosoftDNS(object):
     """
     Class to interact with Microsoft DNS servers for resolving domain names to IP addresses.
@@ -170,7 +187,7 @@ class MicrosoftDNS(object):
             use_ldaps=self.use_ldaps
         )
 
-        target_dn = "CN=MicrosoftDNS,DC=DomainDnsZones," + ldap_server.info.other["rootDomainNamingContext"][0]
+        target_dn = "CN=MicrosoftDNS,DC=DomainDnsZones," + ldap_server.info.other["defaultNamingContext"][0]
 
         ldapresults = list(ldap_session.extend.standard.paged_search(target_dn, "(&(objectClass=dnsNode)(dc=\\2A))", attributes=["distinguishedName", "dNSTombstoned"]))
 
@@ -429,7 +446,7 @@ def parseArgs():
     parser.add_argument("--debug", dest="debug", action="store_true", default=False, help="Debug mode. (default: False).")
     parser.add_argument("-no-colors", dest="colors", action="store_false", default=True, help="Disables colored output mode.")
     parser.add_argument("-t", "--threads", dest="threads", action="store", type=int, default=20, required=False, help="Number of threads (default: 20).")
-    parser.add_argument("-ns", "--nameserver", dest="nameserver", default=None, required=False, help="IP of the DNS server to use, instead of the --dc-ip.")
+    parser.add_argument("-ns", "--nameserver", dest="nameserver", default=None, type=strip_cli_value, required=False, help="IP of the DNS server to use, instead of the --dc-ip.")
 
     group_targets_source = parser.add_argument_group("Targets")
     group_targets_source.add_argument("-tf", "--targets-file", default=None, type=str, help="Path to file containing a line by line list of targets.")
@@ -437,9 +454,9 @@ def parseArgs():
     group_targets_source.add_argument("-tu", "--target-url", default=[], type=str, action='append', help="Target URL to the tomcat manager.")
     group_targets_source.add_argument("-tU", "--targets-urls-file", default=None, type=str, help="Path to file containing a line by line list of target URLs.")
     group_targets_source.add_argument("-tp", "--target-ports", default="80,443,8080,8081,8180,9080,9081,10080", type=str, help="Target ports to scan top search for Apache Tomcat servers.")
-    group_targets_source.add_argument("-ad", "--auth-domain", default="", type=str, help="Windows domain to authenticate to.")
-    group_targets_source.add_argument("-ai", "--auth-dc-ip", default=None, type=str, help="IP of the domain controller.")
-    group_targets_source.add_argument("-au", "--auth-user", default=None, type=str, help="Username of the domain account.")
+    group_targets_source.add_argument("-ad", "--auth-domain", default="", type=strip_cli_value, help="Target Windows domain. Also used for authentication unless --auth-user is DOMAIN\\user.")
+    group_targets_source.add_argument("-ai", "--auth-dc-ip", default=None, type=strip_cli_value, help="IP of the domain controller.")
+    group_targets_source.add_argument("-au", "--auth-user", default=None, type=strip_cli_value, help="Username of the domain account, optionally in DOMAIN\\user format.")
     group_targets_source.add_argument("--ldaps", default=False, action="store_true", help="Use LDAPS (default: False)")
     group_targets_source.add_argument("--no-ldap", default=False, action="store_true", help="Do not perform LDAP queries.")
     group_targets_source.add_argument("--subnets", default=False, action="store_true", help="Get all subnets from the domain and use them as targets (default: False)")
@@ -452,7 +469,7 @@ def parseArgs():
     cred.add_argument("-ah", "--auth-hashes", default=None, type=str, help="LM:NT hashes to pass the hash for this user.")
     cred.add_argument("--aes-key", dest="auth_key", action="store", metavar="hex key", help="AES key to use for Kerberos Authentication (128 or 256 bits)")
     secret.add_argument("-k", "--kerberos", dest="auth_use_kerberos", action="store_true", help="Use Kerberos authentication. Grabs credentials from .ccache file (KRB5CCNAME) based on target parameters. If valid credentials cannot be found, it will use the ones specified in the command line")
-    secret.add_argument("--kdcHost", dest="auth_kdcHost", default=None, type=str, help="IP of the domain controller.")
+    secret.add_argument("--kdcHost", dest="auth_kdcHost", default=None, type=strip_cli_value, help="IP of the domain controller.")
 
     # Shares
     shares = parser.add_argument_group("Shares")
@@ -474,6 +491,12 @@ def parseArgs():
         sys.exit(1)
 
     options = parser.parse_args()
+
+    options.target_domain = options.auth_domain
+    try:
+        options.auth_domain, options.auth_user = parse_auth_identity(options.auth_domain, options.auth_user)
+    except ValueError as e:
+        parser.error(str(e))
 
     if options.auth_password is None and options.no_pass == False and options.auth_hashes is None:
         print("[+] No password or hashes provided and --no-pass is '%s'" % options.no_pass)
@@ -792,7 +815,7 @@ def load_targets(options):
     if not options.no_ldap:
         if options.auth_dc_ip is not None and options.auth_user is not None and (options.auth_password is not None or options.auth_hashes is not None) and options.target_ldap_query is None:
             if options.debug:
-                print("[debug] Loading targets from computers in the domain '%s'" % options.auth_domain)
+                print("[debug] Loading targets from computers in the domain '%s'" % options.target_domain)
             targets += get_computers_from_domain(
                 auth_domain=options.auth_domain,
                 auth_dc_ip=options.auth_dc_ip,
@@ -826,7 +849,7 @@ def load_targets(options):
     if not options.no_ldap:
         if options.subnets and options.auth_dc_ip is not None and options.auth_user is not None and (options.auth_password is not None or options.auth_hashes is not None):
             if options.debug:
-                print("[debug] Loading targets from subnetworks of the domain '%s'" % options.auth_domain)
+                print("[debug] Loading targets from subnetworks of the domain '%s'" % options.target_domain)
             targets += get_subnets(
                 auth_domain=options.auth_domain,
                 auth_dc_ip=options.auth_dc_ip,
@@ -931,7 +954,12 @@ if __name__ == '__main__':
                 use_ldaps=options.ldaps,
                 verbose=options.verbose
             )
-            mdns.check_presence_of_wildcard_dns()
+            try:
+                mdns.check_presence_of_wildcard_dns()
+            except Exception as e:
+                if options.debug:
+                    traceback.print_exc()
+                print("[!] Wildcard DNS check failed: %s. Continuing." % e)
 
         if not options.quiet:
             print("[>] Parsing targets ...")

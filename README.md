@@ -41,6 +41,13 @@
     ```
     ./FindUncommonShares.py -au user -ap 'Podalirius123!' -ad DOMAIN --auth-dc-ip 192.168.1.71 --check-user-access
     ```
+
+ + Enumerate DOMAIN_B with an account from a trusted DOMAIN_A:
+    ```
+    ./FindUncommonShares.py -au 'DOMAIN_A\user' -ap 'Podalirius123!' -ad DOMAIN_B --auth-dc-ip 192.168.1.71 --check-user-access
+    ```
+
+   When `--auth-user` uses the `DOMAIN\user` format, that domain is used for LDAP and SMB authentication. `--auth-domain` remains the target domain. Quote the username so the shell preserves the backslash.
    
 ## Usage
 
@@ -79,11 +86,11 @@ Targets:
   -tp TARGET_PORTS, --target-ports TARGET_PORTS
                         Target ports to scan top search for Apache Tomcat servers.
   -ad AUTH_DOMAIN, --auth-domain AUTH_DOMAIN
-                        Windows domain to authenticate to.
+                        Target Windows domain. Also used for authentication unless --auth-user is DOMAIN\user.
   -ai AUTH_DC_IP, --auth-dc-ip AUTH_DC_IP
                         IP of the domain controller.
   -au AUTH_USER, --auth-user AUTH_USER
-                        Username of the domain account.
+                        Username of the domain account, optionally in DOMAIN\user format.
   --ldaps               Use LDAPS (default: False)
   --no-ldap             Do not perform LDAP queries.
   --subnets             Get all subnets from the domain and use them as targets (default: False)
