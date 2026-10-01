@@ -200,8 +200,8 @@ class MicrosoftDNS(object):
         if len(results.keys()) != 0:
             print("[!] WARNING! Wildcard DNS entries found, dns resolution will not be consistent.")
             for dn, data in results.items():
-                fqdn = re.sub(',CN=MicrosoftDNS,DC=DomainDnsZones,DC=DOMAIN,DC=local$', '', dn)
-                fqdn = '.'.join([dc.split('=')[1] for dc in fqdn.split(',')])
+                fqdn = re.sub(',' + re.escape(target_dn) + '$', '', dn, flags=re.IGNORECASE)
+                fqdn = '.'.join([dc.split('=', 1)[1] for dc in fqdn.split(',')])
 
                 ips = self.resolve(fqdn)
 
