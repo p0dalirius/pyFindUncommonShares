@@ -53,7 +53,7 @@
 
 ```              
 $ ./FindUncommonShares.py -h
-FindUncommonShares v3.2 - by Remi GASCOU (Podalirius)
+FindUncommonShares v3.3 - by Remi GASCOU (Podalirius)
 
 usage: FindUncommonShares.py [-h] [-v] [-q] [--debug] [-no-colors] [-t THREADS] [-ns NAMESERVER] [-tf TARGETS_FILE] [-tt TARGET] [-tu TARGET_URL]
                              [-tU TARGETS_URLS_FILE] [-tp TARGET_PORTS] [-ad AUTH_DOMAIN] [-ai AUTH_DC_IP] [-au AUTH_USER] [--ldaps] [--no-ldap] [--subnets]

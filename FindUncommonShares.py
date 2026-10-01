@@ -29,7 +29,7 @@ import urllib.parse
 import xlsxwriter
 
 
-VERSION = "3.2"
+VERSION = "3.3"
 
 
 COMMON_SHARES = [
