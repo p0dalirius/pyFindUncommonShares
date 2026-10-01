@@ -187,20 +187,32 @@ class MicrosoftDNS(object):
             use_ldaps=self.use_ldaps
         )
 
-        target_dn = "CN=MicrosoftDNS,DC=DomainDnsZones," + ldap_server.info.other["defaultNamingContext"][0]
-
-        ldapresults = list(ldap_session.extend.standard.paged_search(target_dn, "(&(objectClass=dnsNode)(dc=\\2A))", attributes=["distinguishedName", "dNSTombstoned"]))
+        # Wildcard records can be stored in domain-wide and forest-wide DNS application partitions
+        target_dns = [
+            "CN=MicrosoftDNS,DC=DomainDnsZones," + ldap_server.info.other["defaultNamingContext"][0],
+            "CN=MicrosoftDNS,DC=ForestDnsZones," + ldap_server.info.other["rootDomainNamingContext"][0],
+        ]
 
         results = {}
-        for entry in ldapresults:
-            if entry['type'] != 'searchResEntry':
+        suffixes = {}
+        for target_dn in target_dns:
+            try:
+                ldapresults = list(ldap_session.extend.standard.paged_search(target_dn, "(&(objectClass=dnsNode)(dc=\\2A))", attributes=["distinguishedName", "dNSTombstoned"]))
+            except Exception as e:
+                if self.verbose:
+                    print("[debug] Could not search wildcard DNS entries in '%s': %s" % (target_dn, e))
                 continue
-            results[entry['dn']] = entry["attributes"]
+
+            for entry in ldapresults:
+                if entry['type'] != 'searchResEntry':
+                    continue
+                results[entry['dn']] = entry["attributes"]
+                suffixes[entry['dn']] = target_dn
 
         if len(results.keys()) != 0:
             print("[!] WARNING! Wildcard DNS entries found, dns resolution will not be consistent.")
             for dn, data in results.items():
-                fqdn = re.sub(',' + re.escape(target_dn) + '$', '', dn, flags=re.IGNORECASE)
+                fqdn = re.sub(',' + re.escape(suffixes[dn]) + '$', '', dn, flags=re.IGNORECASE)
                 fqdn = '.'.join([dc.split('=', 1)[1] for dc in fqdn.split(',')])
 
                 ips = self.resolve(fqdn)
