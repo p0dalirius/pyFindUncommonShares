@@ -187,10 +187,12 @@ class MicrosoftDNS(object):
             use_ldaps=self.use_ldaps
         )
 
-        # Wildcard records can be stored in domain-wide and forest-wide DNS application partitions
+        # Wildcard records can be stored in domain-wide and forest-wide DNS application partitions,
+        # or in legacy (Windows 2000 compatible) zones stored in the domain partition
         target_dns = [
             "CN=MicrosoftDNS,DC=DomainDnsZones," + ldap_server.info.other["defaultNamingContext"][0],
             "CN=MicrosoftDNS,DC=ForestDnsZones," + ldap_server.info.other["rootDomainNamingContext"][0],
+            "CN=MicrosoftDNS,CN=System," + ldap_server.info.other["defaultNamingContext"][0],
         ]
 
         results = {}
