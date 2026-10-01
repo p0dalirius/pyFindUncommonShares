@@ -55,17 +55,18 @@
 $ ./FindUncommonShares.py -h
 FindUncommonShares v3.3 - by Remi GASCOU (Podalirius)
 
-usage: FindUncommonShares.py [-h] [-v] [-q] [--debug] [-no-colors] [-t THREADS] [-ns NAMESERVER] [-tf TARGETS_FILE] [-tt TARGET] [-tu TARGET_URL]
-                             [-tU TARGETS_URLS_FILE] [-tp TARGET_PORTS] [-ad AUTH_DOMAIN] [-ai AUTH_DC_IP] [-au AUTH_USER] [--ldaps] [--no-ldap] [--subnets]
-                             [-tl TARGET_LDAP_QUERY] [--no-pass | -ap AUTH_PASSWORD | -ah AUTH_HASHES | --aes-key hex key] [-k] [--kdcHost AUTH_KDCHOST]
-                             [--check-user-access] [--readable] [--writable] [-iH] [-iP] [-i IGNORED_SHARES] [-s ACCEPTED_SHARES] [--export-xlsx EXPORT_XLSX]
-                             [--export-json EXPORT_JSON] [--export-sqlite EXPORT_SQLITE]
+usage: FindUncommonShares.py [-h] [-v] [--print-unc] [-q] [--debug] [-no-colors] [-t THREADS] [-ns NAMESERVER] [-tf TARGETS_FILE] [-tt TARGET]
+                             [-tu TARGET_URL] [-tU TARGETS_URLS_FILE] [-tp TARGET_PORTS] [-ad AUTH_DOMAIN] [-ai AUTH_DC_IP] [-au AUTH_USER] [--ldaps]
+                             [--no-ldap] [--subnets] [-tl TARGET_LDAP_QUERY] [--no-pass | -ap AUTH_PASSWORD | -ah AUTH_HASHES | --aes-key hex key] [-k]
+                             [--kdcHost AUTH_KDCHOST] [--check-user-access] [--readable] [--writable] [-iH] [-iP] [-i IGNORED_SHARES] [-s ACCEPTED_SHARES]
+                             [--export-xlsx EXPORT_XLSX] [--export-json EXPORT_JSON] [--export-sqlite EXPORT_SQLITE]
 
 Find uncommon SMB shares on remote machines.
 
 options:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose mode. (default: False).
+  --print-unc           Print the corresponding UNC path.
   -q, --quiet           Show no information at all.
   --debug               Debug mode. (default: False).
   -no-colors            Disables colored output mode.
