@@ -835,15 +835,17 @@ def load_targets(options):
             computers = raw_ldap_query(
                 auth_domain=options.auth_domain,
                 auth_dc_ip=options.auth_dc_ip,
-                auth_username=options.auth_username,
+                auth_username=options.auth_user,
                 auth_password=options.auth_password,
                 auth_hashes=options.auth_hashes,
                 query=options.target_ldap_query,
-                use_ldaps=options.use_ldaps,
+                use_ldaps=options.ldaps,
                 attributes=["dNSHostName"]
             )
-            for _, computer in computers:
-                targets.append(computer["dNSHostName"])
+            for _, computer in computers.items():
+                dnshostname = computer.get("dNSHostName")
+                if dnshostname:
+                    targets.append(dnshostname)
 
     # Loading targets from subnetworks of the domain
     if not options.no_ldap:
